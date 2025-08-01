@@ -33,3 +33,5 @@
 #define MAX_LIBS 100                //Set maximum num of hxo file injectable
 #define HXO_MAX_PATH_LEN 4096           //Set maximum absolute path length
 #define HXO_MAX_FILE_LEN 512            //Set maximum file name length
+
+#define SUPPORT_NONHXO_LIBS
