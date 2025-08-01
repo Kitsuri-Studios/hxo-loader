@@ -580,14 +580,16 @@ int out_fd = 0;
         // Get a pointer to the _init_hxo function
         init_func = dlsym(dlhandle, confparam->ep);
 
-#ifndef SUPPORT_NONHXO_LIBS
         if (!init_func)
         {
+#ifdef SUPPORT_NONHXO_LIBS
+            continue;
+#else
             fprintf(stderr, "[!] Entrypoint not found in: %s\n", files[i]);
             dlclose(dlhandle);
             continue;
-        }
 #endif
+        }
 
         // Call the _init_hxo function
         void *result = init_func(dl_init_Param);
