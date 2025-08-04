@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.20)
 project(hxo-loader VERSION 1.2.0)
 
 # configure the source files
-set(SOURCE_FILES "src/hxo.c" "src/loader.c" "src/utils.c")
+set(SOURCE_FILES "src/hxo.c" "src/loader.c" "src/utils.c" "src/cjson/cJSON.c" "src/cjson/cJSON_Utils.c")
 
 # set the version string
 if(ANDROID)

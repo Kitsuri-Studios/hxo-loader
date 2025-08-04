@@ -31,6 +31,9 @@
 #include "ini.h"
 #include "utils.h"
 #include "config.h"
+#ifdef USING_CJSON
+#include "cjson/cJSON.h"
+#endif
 
 
 #define FILE_EXT ".hxo"
@@ -159,6 +162,72 @@ int __attribute__((visibility("hidden"))) fn_ini_handler(void *user, const char 
     return 1;
 }
 
+#ifdef USING_CJSON
+int __attribute__((visibility("hidden"))) parse_module_json(char *jsonfile, char *modfilearray[], char *hxo_dir)
+{
+    FILE* fp = fopen(jsonfile, "rb");
+    if(!fp)
+    {
+        printf("[!] warning: %s not found!\n", jsonfile);
+        return -1;
+    }
+    if (fseek(fp, 0, SEEK_END) != 0) {
+        fclose(fp);
+        return -1;
+    }
+    // get the file size
+    long size = ftell(fp);
+    if (size < 0) {
+        fclose(fp);
+        return -1;
+    }
+    // Rewind to start if you plan to read the file
+    rewind(fp);
+    // Allocate buffer
+    char *jsonbuffer = malloc(size);
+    if (!jsonbuffer) {
+        fclose(fp);
+        return -1;
+    }
+    // Read the file into memory
+    size_t bytesRead = fread(jsonbuffer, 1, size, fp);
+    if (bytesRead != size) {
+        free(jsonbuffer);
+        fclose(fp);
+        return -1;
+    }
+    fclose(fp);
+    // Parse the JSON
+    cJSON *root = cJSON_Parse(jsonbuffer);
+    if (!root || !cJSON_IsObject(root)) {
+        printf("[!] warning: invalid json data in %s.\n", jsonfile);
+        free(jsonbuffer);
+        return -1;
+    }
+    char targetfile[HXO_MAX_PATH_LEN];
+    char modfile_count = 0;
+    // Iterate all key-value pairs in the object
+    cJSON *item = NULL;
+    cJSON_ArrayForEach(item, root) {
+        const char *key = item->string;
+        if (cJSON_IsBool(item)) {
+            if (cJSON_IsTrue(item)) {
+                dircat(targetfile, hxo_dir, key);
+                if (fileExists(targetfile)) {
+                    modfilearray[modfile_count] = strdup(key);
+                    modfile_count++;
+                } else {
+                    printf("[!] warning: %s doesn't exist, ignored.\n", key);
+                }
+            }
+        }
+    }
+    // Free memory
+    cJSON_Delete(root);
+    free(jsonbuffer);
+    return modfile_count;
+}
+#endif
 
 void __attribute__((visibility("hidden"))) *hxo_loader()
 {
@@ -278,6 +347,19 @@ int out_fd = 0;
     char *files[MAX_LIBS]; // Assuming a maximum number of files
     int count = 0;
 
+#ifdef USING_CJSON
+    char jsonfile[HXO_MAX_PATH_LEN];
+    dircat(jsonfile, entParam->ini_dir, JSONFILE);
+    count = parse_module_json(jsonfile, files, entParam->hxo_dir);
+    if (count == -1) {
+        count = 0;
+        goto searchfiles;
+    } else {
+        goto after_searchfiles;
+    }
+#endif
+
+searchfiles:
     dir = opendir(entParam->hxo_dir);
     if (dir == NULL)
     {
@@ -301,6 +383,7 @@ int out_fd = 0;
     }
 
     closedir(dir);
+after_searchfiles:
 
     //Setup parameters for loading
     char *current_filename = malloc(HXO_MAX_PATH_LEN);
@@ -429,6 +512,19 @@ int out_fd = 0;
     char *files[MAX_LIBS]; // Assuming a maximum number of files
     int count = 0;
 
+#ifdef USING_CJSON
+    char jsonfile[HXO_MAX_PATH_LEN];
+    dircat(jsonfile, entParam->ini_dir, JSONFILE);
+    count = parse_module_json(jsonfile, files, entParam->hxo_dir);
+    if (count == -1) {
+        count = 0;
+        goto searchfiles;
+    } else {
+        goto after_searchfiles;
+    }
+#endif
+
+searchfiles:
     dir = opendir(entParam->hxo_dir);
     if (dir == NULL)
     {
@@ -459,6 +555,7 @@ int out_fd = 0;
     }
 
     closedir(dir);
+after_searchfiles:
 
     // proceed to copy files to the rootDataPath/cache/hxo/
     char *current_filename = malloc(HXO_MAX_PATH_LEN);

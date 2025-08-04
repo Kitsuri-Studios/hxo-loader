@@ -118,6 +118,7 @@ ___So the tree should look something like this:___
 
 ## Acknowledgements
  - [INIh](https://github.com/benhoyt/inih), an awesome INI file parser by Ben Hoyt, used in this project for configuration parsing.
+ - [cJSON](https://github.com/DaveGamble/cJSON), is used for json parsing for this project.
  - This entire project is distributed under the terms of [GPL-v3](https://www.gnu.org/licenses/gpl-3.0.html) and [LGPL-v3](https://www.gnu.org/licenses/lgpl-3.0.en.html).
 
 

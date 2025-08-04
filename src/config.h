@@ -34,4 +34,11 @@
 #define HXO_MAX_PATH_LEN 4096           //Set maximum absolute path length
 #define HXO_MAX_FILE_LEN 512            //Set maximum file name length
 
-#define SUPPORT_NONHXO_LIBS
+#define SUPPORT_NONHXO_LIBS             // for loading files without _init_hxo
+
+#define USING_CJSON
+// will be used for enabling/disabling modules
+// also will disable scanning
+#ifdef USING_CJSON
+    #define JSONFILE "modules.json"
+#endif
