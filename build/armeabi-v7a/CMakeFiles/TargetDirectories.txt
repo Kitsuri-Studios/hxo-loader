@@ -1,0 +1,3 @@
+D:/mods/mayape/M1rage/hxo-loader/build/armeabi-v7a/CMakeFiles/hxo.dir
+D:/mods/mayape/M1rage/hxo-loader/build/armeabi-v7a/CMakeFiles/edit_cache.dir
+D:/mods/mayape/M1rage/hxo-loader/build/armeabi-v7a/CMakeFiles/rebuild_cache.dir

@@ -34,6 +34,9 @@
 #ifdef USING_CJSON
 #include "cjson/cJSON.h"
 #endif
+#ifdef __ANDROID__
+#include "hxo_jni.h"
+#endif
 
 
 #define FILE_EXT ".hxo"
@@ -76,11 +79,15 @@ struct HXOParam {
     const char *hxo_version; //The hxo version string
     int32_t PID;             //PID of current process
     char *baseName;          //Containing the elf executable name
-                        //or, In case of Android: The APP ID
+    //or, In case of Android: The APP ID
 
     char *basePath;          //elf executable path
     char *moduleName;        //The hxo module's file name
     char *modulePath;        //the hxo module's absolute path
+
+#ifdef __ANDROID__
+    struct HXO_JNI_Context *jni_ctx; //JNI context (NULL if JVM not available)
+#endif
 };
 
 /*
@@ -232,7 +239,7 @@ int __attribute__((visibility("hidden"))) parse_module_json(char *jsonfile, char
 void __attribute__((visibility("hidden"))) *hxo_loader()
 {
 #ifdef __ANDROID__
-int out_fd = 0;
+    int out_fd = 0;
 #ifdef _DEBUG_LOG
     out_fd = LogOutput();    //Start the debug log on android
 #endif
@@ -247,7 +254,7 @@ int out_fd = 0;
     //On standard OS... (unix/linux, excluding android)
     //Read Config
     struct internalParam *entParam = malloc(sizeof(struct internalParam));
-    
+
     struct iniParam *confparam = malloc(sizeof(struct iniParam));
     confparam->Enable = 1;
     confparam->sleep = 0;
@@ -260,7 +267,7 @@ int out_fd = 0;
 
     entParam->PID = GetPID();
     // fetch current working directory
-    if (getcwd(entParam->cwd, HXO_MAX_PATH_LEN) == NULL) 
+    if (getcwd(entParam->cwd, HXO_MAX_PATH_LEN) == NULL)
     {
         perror("[!] WARNING: Can't retrive current working directory!");
         *entParam->cwd = (unsigned char) 0;
@@ -277,7 +284,7 @@ int out_fd = 0;
     //SEC:   look for Executable path
     if(*entParam->cwd == 0 && *entParam->exedir==0)
     {
-      _exit_at_init:
+        _exit_at_init:
         //If nothing found... (atleast one is needed to continue)
         free(entParam);
         free(confparam);
@@ -295,8 +302,8 @@ int out_fd = 0;
             goto after_parsing;
         }
     }
-    
-    if (*entParam->exedir != 0) 
+
+    if (*entParam->exedir != 0)
     {
         dircat(entParam->iniFile, entParam->exedir, CONFIGFILE);
         if(!(ini_parse(entParam->iniFile, fn_ini_handler, confparam) < 0))
@@ -320,7 +327,7 @@ int out_fd = 0;
         goto _exit_at_init;
     }
 
-  after_parsing:
+    after_parsing:
 
     //exit without ding anythig if config says to
     if(!confparam->Enable)
@@ -359,7 +366,7 @@ int out_fd = 0;
     }
 #endif
 
-searchfiles:
+    searchfiles:
     dir = opendir(entParam->hxo_dir);
     if (dir == NULL)
     {
@@ -383,17 +390,26 @@ searchfiles:
     }
 
     closedir(dir);
-after_searchfiles:
-
+    after_searchfiles:
+    ;
     //Setup parameters for loading
     char *current_filename = malloc(HXO_MAX_PATH_LEN);
     struct HXOParam *dl_init_Param = malloc(sizeof(struct HXOParam));
     memset(dl_init_Param, 0, sizeof(struct HXOParam));
 
 #else //IN CASE OF ANDROID
+
+    // Get JNI context - MOVED HERE, inside Android-specific block
+    struct HXO_JNI_Context *jni_ctx = hxo_jni_get_context();
+    if (jni_ctx->is_available) {
+        printf("[+] JVM is available for modules\n");
+    } else {
+        printf("[!] JVM not available (not loaded via System.loadLibrary), modules will work without JNI\n");
+    }
+
     //Read Config
     struct internalParam *entParam = malloc(sizeof(struct internalParam));
-    
+
     struct iniParam *confparam = malloc(sizeof(struct iniParam));
     confparam->Enable = 1;
     confparam->sleep = 0;
@@ -432,8 +448,8 @@ after_searchfiles:
     strcpy(entParam->ini_dir, androidParam->AndroidDataPath);
     fixDIR(entParam->ini_dir);
     dircat(entParam->iniFile, entParam->ini_dir, CONFIGFILE);
-    
-    //Create a directory in AndroidParam->AndroidDataPath 
+
+    //Create a directory in AndroidParam->AndroidDataPath
     if(!dirExists(androidParam->AndroidDataPath))
     {
         if (mkdir(androidParam->AndroidDataPath, 0770) == -1)
@@ -441,7 +457,7 @@ after_searchfiles:
             if(errno != EEXIST)
             {
                 fprintf(stderr, "[X] Can't create directory: %s\n", androidParam->AndroidDataPath);
-                // free allocated memory           
+                // free allocated memory
                 free(confparam);
                 free(entParam);
                 free(androidParam);
@@ -497,14 +513,14 @@ after_searchfiles:
 
 
     //setup parameters
-    //HXO Priority of searching for 
+    //HXO Priority of searching for
     dircat(entParam->hxo_dir, androidParam->AndroidDataPath, confparam->hxo_dir);
     char *new_hxo_dir = malloc(1024);
     dircat(new_hxo_dir, androidParam->rootDataPath, "cache/hxo/");
     //Add a slash to avoid directory issues
     fixDIR(entParam->hxo_dir);
     fixDIR(new_hxo_dir);
-    
+
 
     // search for hxo modules in the directory as per config
     DIR *dir;
@@ -556,7 +572,7 @@ searchfiles:
 
     closedir(dir);
 after_searchfiles:
-
+    ;
     // proceed to copy files to the rootDataPath/cache/hxo/
     char *current_filename = malloc(HXO_MAX_PATH_LEN);
     char *new_filename = malloc(HXO_MAX_PATH_LEN);
@@ -572,7 +588,7 @@ after_searchfiles:
             for (int i = 0; i < count; i++)
             {
                 free(files[i]);
-            }            
+            }
             free(confparam);
             free(entParam);
             free(androidParam);
@@ -599,7 +615,7 @@ after_searchfiles:
             for (int i = 0; i < count; i++)
             {
                 free(files[i]);
-            }            
+            }
             free(confparam);
             free(entParam);
             free(androidParam);
@@ -633,7 +649,7 @@ after_searchfiles:
         sleep(confparam->sleep);
     }
     // load one by one and call their perticular entrypoint void* _init_hxo(void*)
-    
+
     void *dlhandle;
     void *(*init_func)(struct HXOParam*);
 
@@ -651,18 +667,19 @@ after_searchfiles:
         dl_init_Param->moduleName = files[i];
         dl_init_Param->PID = entParam->PID;
 
-    #if !defined(__ANDROID__) || defined(__STD_UNIX___)
+#if !defined(__ANDROID__) || defined(__STD_UNIX___)
         //On standard OS... (unix/linux, excluding android)
         dl_init_Param->baseName = strdup(entParam->exename);
         dl_init_Param->basePath = strdup(entParam->exedir);
         dl_init_Param->modulePath = strdup(entParam->hxo_dir);
-    #else
+#else
         //On android
         dl_init_Param->baseName = strdup(androidParam->ID);
         dl_init_Param->basePath = strdup(androidParam->AndroidDataPath);
         dl_init_Param->modulePath = strdup(old_hxo_dir);
-
-    #endif
+        // Pass JNI context to module - MOVED HERE
+        dl_init_Param->jni_ctx = jni_ctx;
+#endif
 
         dlhandle = NULL;
         // Load the shared object file
@@ -708,7 +725,7 @@ after_searchfiles:
         }
     }
 
-    
+
     // free allocated memory
 
     // strings
