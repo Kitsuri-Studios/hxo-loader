@@ -1,7 +1,0 @@
-# ninja log v6
-158	277	7882275698812154	libhxo.so	560844b2f8fbfaab
-73	249	7881956264870962	CMakeFiles/hxo.dir/src/cjson/cJSON.c.o	fc26b91d3ff3704
-82	200	7881956264956416	CMakeFiles/hxo.dir/src/cjson/cJSON_Utils.c.o	291f3469debb6af0
-64	155	7881956264776791	CMakeFiles/hxo.dir/src/utils.c.o	cabe04e3c637a8a
-24	158	7882275697459408	CMakeFiles/hxo.dir/src/hxo.c.o	a63ff69e99306973
-55	145	7881956264680606	CMakeFiles/hxo.dir/src/loader.c.o	303f2f017370a189
