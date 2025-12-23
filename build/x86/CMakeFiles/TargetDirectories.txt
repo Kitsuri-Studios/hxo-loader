@@ -1,3 +1,0 @@
-D:/mods/mayape/M1rage/hxo-loader/build/x86/CMakeFiles/hxo.dir
-D:/mods/mayape/M1rage/hxo-loader/build/x86/CMakeFiles/edit_cache.dir
-D:/mods/mayape/M1rage/hxo-loader/build/x86/CMakeFiles/rebuild_cache.dir
