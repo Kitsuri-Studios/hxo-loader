@@ -238,6 +238,20 @@ int __attribute__((visibility("hidden"))) parse_module_json(char *jsonfile, char
 
 void __attribute__((visibility("hidden"))) *hxo_loader()
 {
+
+    static int loader_called = 0;
+    static pthread_mutex_t loader_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+    pthread_mutex_lock(&loader_mutex);
+    if (loader_called) {
+        pthread_mutex_unlock(&loader_mutex);
+        printf("[!] HXO loader already executed, skipping duplicate call\n");
+        return (void*)0;
+    }
+    loader_called = 1;
+    pthread_mutex_unlock(&loader_mutex);
+
+
 #ifdef __ANDROID__
     int out_fd = 0;
 #ifdef _DEBUG_LOG
