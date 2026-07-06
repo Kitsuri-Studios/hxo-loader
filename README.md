@@ -1,5 +1,5 @@
 
-# HXO-loader: Hybrid Xpl0it loader
+# HXO-loader: Hackable (X)cutable loader
 
 A shared object (.so) auto-injector, particularly made for game hacking/modding in mind.
 
